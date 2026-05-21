@@ -32,7 +32,7 @@ void SwerveDriveKinematics::calculate_wheel_position(
 
 std::array<WheelCommand, 4> SwerveDriveKinematics::compute_wheel_commands(
   double linear_velocity_x, double linear_velocity_y, double angular_velocity_z,
-  double wheel_radius)
+  double wheel_radius, double center_of_rotation_x, double center_of_rotation_y)
 {
   std::array<WheelCommand, 4> wheel_commands;
 
@@ -44,7 +44,9 @@ std::array<WheelCommand, 4> SwerveDriveKinematics::compute_wheel_commands(
 
   for (std::size_t i = 0; i < 4; i++)
   {
-    const auto & [wx, wy] = wheel_positions_[i];
+    const auto & [wheel_x, wheel_y] = wheel_positions_[i];
+    const double wx = wheel_x - center_of_rotation_x;
+    const double wy = wheel_y - center_of_rotation_y;
 
     double vx = linear_velocity_x - angular_velocity_z * wy;
     double vy = linear_velocity_y + angular_velocity_z * wx;
@@ -71,27 +73,9 @@ std::array<WheelCommand, 4> SwerveDriveKinematics::compute_wheel_commands(
 
 std::array<WheelCommand, 4> SwerveDriveKinematics::optimize_wheel_commands(
   const std::array<WheelCommand, 4> & wheel_commands,
-  const std::array<double, 4> & current_steering_angles)
+  const std::array<double, 4> &)
 {
-  std::array<WheelCommand, 4> optimized_commands = wheel_commands;
-
-  for (std::size_t i = 0; i < 4; i++)
-  {
-    double target_angle = wheel_commands[i].steering_angle;
-    double current_angle = current_steering_angles[i];
-
-    double angle_diff = angles::shortest_angular_distance(current_angle, target_angle);
-
-    if (std::abs(angle_diff) > M_PI_2)
-    {
-      optimized_commands[i].drive_velocity = -wheel_commands[i].drive_velocity;
-      optimized_commands[i].drive_angular_velocity = -wheel_commands[i].drive_angular_velocity;
-
-      optimized_commands[i].steering_angle = angles::normalize_angle(target_angle + M_PI);
-    }
-  }
-
-  return optimized_commands;
+  return wheel_commands;
 }
 
 OdometryState SwerveDriveKinematics::update_odometry(

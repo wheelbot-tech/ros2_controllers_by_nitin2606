@@ -77,20 +77,21 @@ public:
    * @param linear_velocity_y Linear velocity in the y direction (m/s).
    * @param angular_velocity_z Angular velocity about the z-axis (rad/s).
    * @param wheel_radius Radius of the wheel (meters). Same radius used for all wheels.
+   * @param center_of_rotation_x X coordinate of the rotation center in base frame (meters).
+   * @param center_of_rotation_y Y coordinate of the rotation center in base frame (meters).
    * @return Array of wheel commands (steering angles, drive linear velocities (m/s),
    *         and drive angular velocities (rad/s)).
    */
   std::array<WheelCommand, 4> compute_wheel_commands(
     double linear_velocity_x, double linear_velocity_y, double angular_velocity_z,
-    double wheel_radius);
+    double wheel_radius, double center_of_rotation_x = 0.0, double center_of_rotation_y = 0.0);
 
   /**
-   * @brief Optimize wheel commands to minimize steering rotation.
-   * If a wheel needs to rotate more than 90 degrees, flip the wheel velocity
-   * and adjust the steering angle by 180 degrees instead.
+   * @brief Keep wheel commands on the module +X drive direction.
+   * The steering angle is not flipped by 180 degrees and wheel velocity remains positive.
    * @param wheel_commands The computed wheel commands.
    * @param current_steering_angles Array of current steering angles (radians).
-   * @return Optimized wheel commands with minimal steering rotation.
+   * @return Wheel commands using positive drive velocity.
    */
   std::array<WheelCommand, 4> optimize_wheel_commands(
     const std::array<WheelCommand, 4> & wheel_commands,

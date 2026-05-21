@@ -378,7 +378,8 @@ controller_interface::return_type SwerveController::update_and_write_commands(
   }
 
   auto wheel_command = swerveDriveKinematics_.compute_wheel_commands(
-    linear_x_cmd, linear_y_cmd, angular_cmd, params_.wheel_radius);
+    linear_x_cmd, linear_y_cmd, angular_cmd, params_.wheel_radius,
+    params_.center_of_rotation[0], params_.center_of_rotation[1]);
 
   std::array<double, 4> current_steering_angles{};
   for (std::size_t i = 0; i < 4; ++i)
