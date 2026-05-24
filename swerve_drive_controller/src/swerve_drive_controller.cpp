@@ -377,6 +377,17 @@ controller_interface::return_type SwerveController::update_and_write_commands(
     return controller_interface::return_type::OK;
   }
 
+  const double linear_speed_cmd = std::hypot(linear_x_cmd, linear_y_cmd);
+  const double rotation_tangent_speed =
+    std::abs(angular_cmd) * 0.5 * std::hypot(params_.wheelbase, params_.trackwidth);
+  const bool angular_dominant_command =
+    std::abs(angular_cmd) > 1.0e-4 && linear_speed_cmd < 0.75 * rotation_tangent_speed;
+  if (angular_dominant_command)
+  {
+    linear_x_cmd = 0.0;
+    linear_y_cmd = 0.0;
+  }
+
   auto wheel_command = swerveDriveKinematics_.compute_wheel_commands(
     linear_x_cmd, linear_y_cmd, angular_cmd, params_.wheel_radius,
     params_.center_of_rotation[0], params_.center_of_rotation[1]);
@@ -394,8 +405,13 @@ controller_interface::return_type SwerveController::update_and_write_commands(
     }
   }
 
-  wheel_command =
-    swerveDriveKinematics_.optimize_wheel_commands(wheel_command, current_steering_angles);
+  const bool has_translation = std::hypot(linear_x_cmd, linear_y_cmd) >= 1.0e-4;
+  const bool has_rotation = std::abs(angular_cmd) >= 1.0e-4;
+  if (has_translation && has_rotation)
+  {
+    wheel_command =
+      swerveDriveKinematics_.optimize_wheel_commands(wheel_command, current_steering_angles);
+  }
 
   std::vector<std::tuple<WheelCommand &, double, std::string>> wheel_data = {
     {wheel_command[0], params_.front_left_velocity_threshold / params_.wheel_radius,

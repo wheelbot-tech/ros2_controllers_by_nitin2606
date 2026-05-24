@@ -87,11 +87,12 @@ public:
     double wheel_radius, double center_of_rotation_x = 0.0, double center_of_rotation_y = 0.0);
 
   /**
-   * @brief Keep wheel commands on the module +X drive direction.
-   * The steering angle is not flipped by 180 degrees and wheel velocity remains positive.
+   * @brief Optimize wheel commands to minimize steering rotation.
+   * If a wheel needs to rotate more than 90 degrees, flip the wheel velocity
+   * and adjust the steering angle by 180 degrees instead.
    * @param wheel_commands The computed wheel commands.
    * @param current_steering_angles Array of current steering angles (radians).
-   * @return Wheel commands using positive drive velocity.
+   * @return Optimized wheel commands with minimal steering rotation.
    */
   std::array<WheelCommand, 4> optimize_wheel_commands(
     const std::array<WheelCommand, 4> & wheel_commands,
