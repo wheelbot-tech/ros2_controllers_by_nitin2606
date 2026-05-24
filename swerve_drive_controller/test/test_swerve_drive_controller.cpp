@@ -186,8 +186,8 @@ TEST_F(SwerveDriveControllerTest, configure_succeeds_tf_prefix_false_set_namespa
   const auto & odom_msg = controller_->get_odometry_message();
   std::string test_odom_frame_id = odom_msg.header.frame_id;
   std::string test_base_frame_id = odom_msg.child_frame_id;
-  ASSERT_EQ(test_odom_frame_id, "/test_namespace/odom");
-  ASSERT_EQ(test_base_frame_id, "/test_namespace/base_footprint");
+  ASSERT_EQ(test_odom_frame_id, "test_namespace/odom");
+  ASSERT_EQ(test_base_frame_id, "test_namespace/base_footprint");
 }
 
 TEST_F(SwerveDriveControllerTest, configure_succeeds_tf_prefix_true_set_namespace)
@@ -212,8 +212,8 @@ TEST_F(SwerveDriveControllerTest, configure_succeeds_tf_prefix_true_set_namespac
   const auto & odom_msg = controller_->get_odometry_message();
   std::string test_odom_frame_id = odom_msg.header.frame_id;
   std::string test_base_frame_id = odom_msg.child_frame_id;
-  ASSERT_EQ(test_odom_frame_id, "/test_namespace/odom");
-  ASSERT_EQ(test_base_frame_id, "/test_namespace/base_footprint");
+  ASSERT_EQ(test_odom_frame_id, "test_namespace/odom");
+  ASSERT_EQ(test_base_frame_id, "test_namespace/base_footprint");
 }
 
 TEST_F(SwerveDriveControllerTest, configure_succeeds_tf_blank_prefix_true_set_namespace)
@@ -238,8 +238,8 @@ TEST_F(SwerveDriveControllerTest, configure_succeeds_tf_blank_prefix_true_set_na
   const auto & odom_msg = controller_->get_odometry_message();
   std::string test_odom_frame_id = odom_msg.header.frame_id;
   std::string test_base_frame_id = odom_msg.child_frame_id;
-  ASSERT_EQ(test_odom_frame_id, "/test_namespace/odom");
-  ASSERT_EQ(test_base_frame_id, "/test_namespace/base_footprint");
+  ASSERT_EQ(test_odom_frame_id, "test_namespace/odom");
+  ASSERT_EQ(test_base_frame_id, "test_namespace/base_footprint");
 }
 
 TEST_F(SwerveDriveControllerTest, activate_fails_without_resources_assigned)

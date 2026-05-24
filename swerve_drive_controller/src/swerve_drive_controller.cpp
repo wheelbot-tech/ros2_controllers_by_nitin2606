@@ -226,14 +226,17 @@ CallbackReturn SwerveController::on_configure(const rclcpp_lifecycle::State & /*
       std::make_shared<realtime_tools::RealtimePublisher<nav_msgs::msg::Odometry>>(
         odometry_publisher_);
 
-    std::string tf_prefix = "";
-    tf_prefix = std::string(get_node()->get_namespace());
-    if (tf_prefix == "/")
+    std::string tf_prefix = std::string(get_node()->get_namespace());
+    if (tf_prefix == "/" || tf_prefix.empty())
     {
       tf_prefix = "";
     }
     else
     {
+      if (tf_prefix.front() == '/')
+      {
+        tf_prefix.erase(0, 1);
+      }
       tf_prefix = tf_prefix + "/";
     }
 
