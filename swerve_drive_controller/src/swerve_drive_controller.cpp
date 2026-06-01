@@ -410,27 +410,30 @@ controller_interface::return_type SwerveController::update_and_write_commands(
 
   const bool has_translation = std::hypot(linear_x_cmd, linear_y_cmd) >= 1.0e-4;
   const bool has_rotation = std::abs(angular_cmd) >= 1.0e-4;
-  if (has_translation && has_rotation)
+  if (has_translation || has_rotation)
   {
     wheel_command =
       swerveDriveKinematics_.optimize_wheel_commands(wheel_command, current_steering_angles);
   }
 
   std::vector<std::tuple<WheelCommand &, double, std::string>> wheel_data = {
-    {wheel_command[0], params_.front_left_velocity_threshold / params_.wheel_radius,
+    {wheel_command[0], params_.front_left_velocity_threshold,
      "front_left_wheel"},
-    {wheel_command[1], params_.front_right_velocity_threshold / params_.wheel_radius,
+    {wheel_command[1], params_.front_right_velocity_threshold,
      "front_right_wheel"},
-    {wheel_command[2], params_.rear_left_velocity_threshold / params_.wheel_radius,
+    {wheel_command[2], params_.rear_left_velocity_threshold,
      "rear_left_wheel"},
-    {wheel_command[3], params_.rear_right_velocity_threshold / params_.wheel_radius,
+    {wheel_command[3], params_.rear_right_velocity_threshold,
      "rear_right_wheel"}};
 
   for (const auto & [wheel_command_, threshold, label] : wheel_data)
   {
-    if (wheel_command_.drive_velocity > threshold)
+    const double abs_velocity = std::abs(wheel_command_.drive_velocity);
+    if (abs_velocity > threshold)
     {
-      wheel_command_.drive_velocity = threshold;
+      const double scale = threshold / abs_velocity;
+      wheel_command_.drive_velocity *= scale;
+      wheel_command_.drive_angular_velocity *= scale;
     }
   }
 
