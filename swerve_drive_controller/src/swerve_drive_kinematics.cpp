@@ -98,12 +98,19 @@ std::array<WheelCommand, 4> SwerveDriveKinematics::optimize_wheel_commands(
 
 OdometryState SwerveDriveKinematics::update_odometry(
   const std::array<double, 4> & wheel_velocities, const std::array<double, 4> & steering_angles,
-  double dt)
+  double dt, const std::array<bool, 4> & active_wheels)
 {
   // Compute robot-centric velocity (assuming perfect wheel control)
   double vx_sum = 0.0, vy_sum = 0.0, wz_sum = 0.0;
+  double wz_denominator = 0.0;
+  std::size_t active_count = 0;
   for (std::size_t i = 0; i < 4; i++)
   {
+    if (!active_wheels[i])
+    {
+      continue;
+    }
+
     double vx = wheel_velocities[i] * std::cos(steering_angles[i]);
     double vy = wheel_velocities[i] * std::sin(steering_angles[i]);
 
@@ -112,18 +119,22 @@ OdometryState SwerveDriveKinematics::update_odometry(
     vy_sum += vy;
 
     wz_sum += (vy * wheel_positions_[i].first - vx * wheel_positions_[i].second);
-  }
-
-  double vx_robot = vx_sum / 4.0;
-  double vy_robot = vy_sum / 4.0;
-
-  double wz_denominator = 0.0;
-  for (std::size_t i = 0; i < 4; i++)
-  {
     wz_denominator +=
       (wheel_positions_[i].first * wheel_positions_[i].first +
        wheel_positions_[i].second * wheel_positions_[i].second);
+    ++active_count;
   }
+
+  if (active_count == 0 || wz_denominator <= 0.0)
+  {
+    odometry_.vx = 0.0;
+    odometry_.vy = 0.0;
+    odometry_.wz = 0.0;
+    return odometry_;
+  }
+
+  double vx_robot = vx_sum / static_cast<double>(active_count);
+  double vy_robot = vy_sum / static_cast<double>(active_count);
   double wz_robot = wz_sum / wz_denominator;
 
   // Compute linear displacement in robot frame

@@ -14,10 +14,12 @@
 #include "swerve_drive_controller/swerve_drive_controller.hpp"
 
 #include <cmath>
+#include <algorithm>
 #include <memory>
 #include <queue>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -33,6 +35,40 @@ constexpr auto DEFAULT_COMMAND_TOPIC = "~/cmd_vel";
 constexpr auto DEFAULT_COMMAND_UNSTAMPED_TOPIC = "~/cmd_vel_unstamped";
 constexpr auto DEFAULT_ODOMETRY_TOPIC = "~/odom";
 constexpr auto DEFAULT_TRANSFORM_TOPIC = "/tf";
+
+std::array<bool, 4> parse_active_wheels(
+  const std::vector<std::string> & configured_wheels, const rclcpp::Logger & logger)
+{
+  const std::unordered_map<std::string, std::size_t> wheel_index = {
+    {"front_left", 0}, {"front_right", 1}, {"rear_left", 2}, {"rear_right", 3}};
+  std::array<bool, 4> active_wheels{{false, false, false, false}};
+
+  for (const auto & wheel : configured_wheels)
+  {
+    const auto it = wheel_index.find(wheel);
+    if (it == wheel_index.end())
+    {
+      RCLCPP_WARN(
+        logger,
+        "Ignoring unknown active_wheels entry '%s'. Expected front_left, front_right, rear_left, "
+        "or rear_right.",
+        wheel.c_str());
+      continue;
+    }
+    active_wheels[it->second] = true;
+  }
+
+  const bool has_active_wheel =
+    std::any_of(active_wheels.begin(), active_wheels.end(), [](bool active) { return active; });
+  if (!has_active_wheel)
+  {
+    RCLCPP_WARN(
+      logger, "No valid active_wheels configured; falling back to all four wheels for odometry.");
+    active_wheels = {{true, true, true, true}};
+  }
+
+  return active_wheels;
+}
 
 }  // namespace
 
@@ -180,6 +216,7 @@ CallbackReturn SwerveController::on_configure(const rclcpp_lifecycle::State & /*
     axle_joint_names[1] = params_.front_right_axle_joint;
     axle_joint_names[2] = params_.rear_left_axle_joint;
     axle_joint_names[3] = params_.rear_right_axle_joint;
+    active_wheels_ = parse_active_wheels(params_.active_wheels, logger);
     cmd_vel_timeout_ =
       std::chrono::milliseconds(static_cast<int>(params_.cmd_vel_timeout * 1000.0));
     if (!reset())
@@ -508,7 +545,7 @@ controller_interface::return_type SwerveController::update_and_write_commands(
     }
   }
   odometry_ = swerveDriveKinematics_.update_odometry(
-    velocity_array, steering_angle_array, update_dt.seconds());
+    velocity_array, steering_angle_array, update_dt.seconds(), active_wheels_);
 
   tf2::Quaternion orientation;
   orientation.setRPY(0.0, 0.0, odometry_.theta);

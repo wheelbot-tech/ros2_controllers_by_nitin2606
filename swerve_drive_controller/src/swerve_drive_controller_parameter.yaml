@@ -120,6 +120,12 @@ swerve_drive_controller:
     description: "If set to true the odometry of the robot will be calculated from the commanded values and not from feedback.",
     read_only: true
   }
+  active_wheels: {
+    type: string_array,
+    default_value: ["front_left", "front_right", "rear_left", "rear_right"],
+    description: "Wheel locations used for odometry integration. Valid values are front_left, front_right, rear_left, and rear_right.",
+    read_only: true
+  }
   front_left_velocity_threshold: {
     type: double,
     default_value: 2.0,

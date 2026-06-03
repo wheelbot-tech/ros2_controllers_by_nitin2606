@@ -194,6 +194,7 @@ protected:
   std::vector<std::optional<Axle>> axle_handles_;
   std::array<std::string, 4> wheel_joint_names{};
   std::array<std::string, 4> axle_joint_names{};
+  std::array<bool, 4> active_wheels_{{true, true, true, true}};
 
   const double EPS = 1e-6;
   std::array<double, 4> previous_steering_angles_{};
