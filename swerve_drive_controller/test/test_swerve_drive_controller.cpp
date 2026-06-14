@@ -406,6 +406,60 @@ TEST_F(SwerveDriveControllerTest, command_with_zero_timestamp_is_accepted_with_w
   executor.cancel();
 }
 
+TEST_F(SwerveDriveControllerTest, common_speed_scale_uses_only_active_wheels)
+{
+  ASSERT_EQ(
+    InitController(
+      wheel_joint_names_, steering_joint_names_,
+      {
+        rclcpp::Parameter(
+          "active_wheels", std::vector<std::string>{"front_right", "rear_left"}),
+        rclcpp::Parameter("use_common_speed_scale", true),
+        rclcpp::Parameter("steering_speed_scale_start_angle", M_PI / 18.0),
+      }),
+    controller_interface::return_type::OK);
+
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(controller_->get_node()->get_node_base_interface());
+
+  auto state = controller_->get_node()->configure();
+  ASSERT_EQ(State::PRIMARY_STATE_INACTIVE, state.id());
+
+  steering_pos_states_[0] = M_PI * 4.0 / 9.0;  // Inactive FL: 80 degrees.
+  steering_pos_states_[1] = M_PI / 3.0;        // Active FR: 60 degrees.
+  steering_pos_states_[2] = 0.0;               // Active RL: aligned.
+  steering_pos_states_[3] = 0.0;
+  assignResources();
+
+  state = controller_->get_node()->activate();
+  ASSERT_EQ(State::PRIMARY_STATE_ACTIVE, state.id());
+  waitForSetup();
+
+  publish_twist(0.1, 0.0, 0.0);
+  controller_->wait_for_twist(executor);
+
+  ASSERT_EQ(
+    controller_->update_reference_from_subscribers(
+      rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.01)),
+    controller_interface::return_type::OK);
+  ASSERT_EQ(
+    controller_->update_and_write_commands(
+      rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.01)),
+    controller_interface::return_type::OK);
+
+  const double expected_common_scale = std::cos(M_PI / 3.0) / std::cos(M_PI / 18.0);
+  for (const auto & command_interface : command_itfs_)
+  {
+    if (command_interface.get_interface_name() == HW_IF_VELOCITY)
+    {
+      EXPECT_NEAR(
+        command_interface.get_optional().value(), expected_common_scale, 1.0e-9);
+    }
+  }
+
+  executor.cancel();
+}
+
 int main(int argc, char ** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);

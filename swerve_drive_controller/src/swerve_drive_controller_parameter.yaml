@@ -123,7 +123,23 @@ swerve_drive_controller:
   active_wheels: {
     type: string_array,
     default_value: ["front_left", "front_right", "rear_left", "rear_right"],
-    description: "Wheel locations used for odometry integration. Valid values are front_left, front_right, rear_left, and rear_right.",
+    description: "Physical wheel locations used for odometry integration and common steering speed scaling. Valid values are front_left, front_right, rear_left, and rear_right.",
+    read_only: true
+  }
+  use_common_speed_scale: {
+    type: bool,
+    default_value: false,
+    description: "Apply the lowest steering-alignment speed scale from the active wheels to every wheel command.",
+    read_only: true
+  }
+  steering_speed_scale_start_angle: {
+    type: double,
+    default_value: 0.5235987755982988,
+    description: "Absolute steering error in radians above which drive velocity scaling begins.",
+    validation: {
+      "swerve_drive_controller::gt<>": [0.0],
+      "swerve_drive_controller::lt<>": [1.5608]
+    },
     read_only: true
   }
   front_left_velocity_threshold: {

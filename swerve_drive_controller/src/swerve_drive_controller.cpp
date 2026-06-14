@@ -13,8 +13,8 @@
 
 #include "swerve_drive_controller/swerve_drive_controller.hpp"
 
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <queue>
 #include <string>
@@ -474,7 +474,8 @@ controller_interface::return_type SwerveController::update_and_write_commands(
     }
   }
 
-  const double min_steering_error = M_PI / 6.0;  // 30 degrees
+  const double min_steering_error = params_.steering_speed_scale_start_angle;
+  std::array<double, 4> steering_speed_scales{};
   for (std::size_t i = 0; i < 4; i++)
   {
     double steering_error = std::abs(
@@ -496,9 +497,26 @@ controller_interface::return_type SwerveController::update_and_write_commands(
       }
     }
 
-    // Apply velocity scaling
-    wheel_command[i].drive_velocity *= velocity_scale;
-    wheel_command[i].drive_angular_velocity *= velocity_scale;
+    steering_speed_scales[i] = velocity_scale;
+  }
+
+  if (params_.use_common_speed_scale)
+  {
+    double common_scale = 1.0;
+    for (std::size_t i = 0; i < active_wheels_.size(); ++i)
+    {
+      if (active_wheels_[i])
+      {
+        common_scale = std::min(common_scale, steering_speed_scales[i]);
+      }
+    }
+    steering_speed_scales.fill(common_scale);
+  }
+
+  for (std::size_t i = 0; i < 4; ++i)
+  {
+    wheel_command[i].drive_velocity *= steering_speed_scales[i];
+    wheel_command[i].drive_angular_velocity *= steering_speed_scales[i];
   }
 
   for (std::size_t i = 0; i < 4; i++)
